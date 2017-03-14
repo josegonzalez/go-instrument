@@ -160,7 +160,13 @@ type NoSegment struct{}
 // name and both the response and request structs.
 func (n HasNewRelic) NewTransaction(name string, rw http.ResponseWriter, r *http.Request) Transaction {
 	app := *n.Application
-	return NewRelicTransaction{Txn: app.StartTransaction(name, rw, r)}
+	txn := app.StartTransaction(name, rw, r)
+
+	if r.URL.Path == "/_status" {
+		txn.Ignore()
+	}
+
+	return NewRelicTransaction{Txn: txn}
 }
 
 // AddAttribute stores the key-value attribute for the transaction directly with

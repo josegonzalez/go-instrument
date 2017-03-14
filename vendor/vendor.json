@@ -1,0 +1,91 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "NRonvQTe073YVead6//CQ5oVgK4=",
+			"path": "github.com/Sirupsen/logrus",
+			"revision": "1deb2db2a6fff8a35532079061b903c3a25eed52",
+			"revisionTime": "2017-03-08T20:36:35Z"
+		},
+		{
+			"checksumSHA1": "DD8FkpJIXDppCrkvWXz5YqasY9I=",
+			"path": "github.com/codegangsta/negroni",
+			"revision": "c0db5feaa33826cd5117930c8f4ee5c0f565eec6",
+			"revisionTime": "2017-02-26T00:53:33Z"
+		},
+		{
+			"checksumSHA1": "1kVa89e/yk8L2liYiFuJrNWiXfU=",
+			"path": "github.com/influxdata/influxdb/client/v2",
+			"revision": "7d2eac173b6b720c1a5c0a5616a96f3e013a758e",
+			"revisionTime": "2017-03-08T22:38:46Z"
+		},
+		{
+			"checksumSHA1": "FF7fzjW7yWl/ObniSAlidx2eXUE=",
+			"path": "github.com/influxdata/influxdb/models",
+			"revision": "7d2eac173b6b720c1a5c0a5616a96f3e013a758e",
+			"revisionTime": "2017-03-08T22:38:46Z"
+		},
+		{
+			"checksumSHA1": "H/J/qLqzUONXIecHHKtVZmxJZZA=",
+			"path": "github.com/influxdata/influxdb/pkg/escape",
+			"revision": "7d2eac173b6b720c1a5c0a5616a96f3e013a758e",
+			"revisionTime": "2017-03-08T22:38:46Z"
+		},
+		{
+			"checksumSHA1": "83fFy3fJuE8txMB0DsGcvM55mAo=",
+			"path": "github.com/newrelic/go-agent",
+			"revision": "7c6c920d222b18632f03b12c3b594df816eab6d0",
+			"revisionTime": "2017-02-16T20:56:41Z"
+		},
+		{
+			"checksumSHA1": "ayb9hq4jjgm/T+9ezjWk3WEzids=",
+			"path": "github.com/newrelic/go-agent/_integrations/nrlogrus",
+			"revision": "7c6c920d222b18632f03b12c3b594df816eab6d0",
+			"revisionTime": "2017-02-16T20:56:41Z"
+		},
+		{
+			"checksumSHA1": "mHFkZDTxwIW8KH0A8FHIJza1DcM=",
+			"path": "github.com/newrelic/go-agent/internal",
+			"revision": "7c6c920d222b18632f03b12c3b594df816eab6d0",
+			"revisionTime": "2017-02-16T20:56:41Z"
+		},
+		{
+			"checksumSHA1": "mkbupMdy+cF7xyo8xW0A6Bq15k4=",
+			"path": "github.com/newrelic/go-agent/internal/jsonx",
+			"revision": "7c6c920d222b18632f03b12c3b594df816eab6d0",
+			"revisionTime": "2017-02-16T20:56:41Z"
+		},
+		{
+			"checksumSHA1": "ywxlVKtGArJ2vDfH1rAqEFwSGds=",
+			"path": "github.com/newrelic/go-agent/internal/logger",
+			"revision": "7c6c920d222b18632f03b12c3b594df816eab6d0",
+			"revisionTime": "2017-02-16T20:56:41Z"
+		},
+		{
+			"checksumSHA1": "S7CiHO7EblgZt9q7wgiXMv/j/ao=",
+			"path": "github.com/newrelic/go-agent/internal/sysinfo",
+			"revision": "7c6c920d222b18632f03b12c3b594df816eab6d0",
+			"revisionTime": "2017-02-16T20:56:41Z"
+		},
+		{
+			"checksumSHA1": "c2JSKesj3tHYgzIF3QL37WfHWG8=",
+			"path": "github.com/newrelic/go-agent/internal/utilization",
+			"revision": "7c6c920d222b18632f03b12c3b594df816eab6d0",
+			"revisionTime": "2017-02-16T20:56:41Z"
+		},
+		{
+			"checksumSHA1": "cJM8GwMbLR6/jE58CR5HDcCpJ3c=",
+			"path": "github.com/seatgeek/telemetria",
+			"revision": "99522d39fc40b9578fb96600dd5719550cd8131c",
+			"revisionTime": "2017-03-02T15:39:45Z"
+		},
+		{
+			"checksumSHA1": "/oZpHfYc+ZgOwYAhlvcMhmETYpw=",
+			"path": "golang.org/x/sys/unix",
+			"revision": "99f16d856c9836c42d24e7ab64ea72916925fa97",
+			"revisionTime": "2017-03-08T15:04:45Z"
+		}
+	],
+	"rootPath": "github.com/seatgeek/go-instrument"
+}

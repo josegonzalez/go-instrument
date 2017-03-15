@@ -121,6 +121,11 @@ type Instruments interface {
 
 	// WithResultTiming Times the passed function into error, panic, or success categories.
 	WithResultTiming(Category, string, TagsList, func() error) error
+
+	// WithOfflineTransaction returns a new set of instruments that start a new
+	// transaction that can be used to trace code running offline. That is, after
+	// the response has been sent to the user.
+	WithOfflineTransaction() Instruments
 }
 
 type fullInstruments struct {
@@ -266,6 +271,15 @@ func GetInstruments(r *http.Request) Instruments {
 // NoticeError just delegates the error tracking to the New Relic instance
 func (i *fullInstruments) NoticeError(e error) {
 	i.nrTransaction.NoticeError(e)
+}
+
+// WithOfflineTransaction Will start a new transaction with a similar name to the
+// parent transaction. This method is mainly used to track code that is runinng
+// in goroutines other than the one that spun the first transaction.
+func (i *fullInstruments) WithOfflineTransaction() Instruments {
+	name := "(offline)" + i.txnName
+	txn := i.config.Tracer.NewTransaction(name, nil, nil)
+	return i.config.WithTransaction(name, txn)
 }
 
 //
@@ -503,4 +517,9 @@ func (n NoInstruments) StartTimerWithTags(c Category, name string, tags TagsList
 // WithResultTiming just calls the passed function without actually timing it
 func (n NoInstruments) WithResultTiming(c Category, name string, t TagsList, f func() error) error {
 	return f()
+}
+
+// WithOfflineTransaction will return again NoInstruments
+func (n NoInstruments) WithOfflineTransaction() Instruments {
+	return n
 }

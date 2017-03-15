@@ -122,10 +122,13 @@ type Instruments interface {
 	// WithResultTiming Times the passed function into error, panic, or success categories.
 	WithResultTiming(Category, string, TagsList, func() error) error
 
-	// WithOfflineTransaction returns a new set of instruments that start a new
-	// transaction that can be used to trace code running offline. That is, after
-	// the response has been sent to the user.
-	WithOfflineTransaction() Instruments
+	// WithOfflineTransaction will call the function with a new set of instruments that start a new
+	// transaction and that can be used to trace code running offline. That is, after
+	// the response has been sent to the user.o
+	//
+	// Proper implementations of this method will automatically end the transaction
+	// and the end of the method
+	WithOfflineTransaction(func(Instruments))
 }
 
 type fullInstruments struct {
@@ -276,10 +279,13 @@ func (i *fullInstruments) NoticeError(e error) {
 // WithOfflineTransaction Will start a new transaction with a similar name to the
 // parent transaction. This method is mainly used to track code that is runinng
 // in goroutines other than the one that spun the first transaction.
-func (i *fullInstruments) WithOfflineTransaction() Instruments {
+func (i *fullInstruments) WithOfflineTransaction(f func(Instruments)) {
 	name := "(offline)" + i.txnName
 	txn := i.config.Tracer.NewTransaction(name, nil, nil)
-	return i.config.WithTransaction(name, txn)
+	defer txn.End()
+
+	instruments := i.config.WithTransaction(name, txn)
+	f(instruments)
 }
 
 //
@@ -519,7 +525,7 @@ func (n NoInstruments) WithResultTiming(c Category, name string, t TagsList, f f
 	return f()
 }
 
-// WithOfflineTransaction will return again NoInstruments
-func (n NoInstruments) WithOfflineTransaction() Instruments {
-	return n
+// WithOfflineTransaction will call the passed function with NoInstruments
+func (n NoInstruments) WithOfflineTransaction(f func(Instruments)) {
+	f(n)
 }

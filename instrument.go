@@ -170,7 +170,7 @@ func (n HasNewRelic) NewTransaction(name string, rw http.ResponseWriter, r *http
 	app := *n.Application
 	txn := app.StartTransaction(name, rw, r)
 
-	if r.URL.Path == "/_status" {
+	if r != nil && r.URL.Path == "/_status" {
 		txn.Ignore()
 	}
 

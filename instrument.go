@@ -431,6 +431,10 @@ func (i *fullInstruments) RecordEvent(c Category, name string, fields FieldsList
 		tags = TagsList{}
 	}
 
+	if len(fields) == 0 {
+		fields = FieldsList{"count": 1}
+	}
+
 	// This prevents race conditions as maps are passed by reference
 	newTagList := copyTags(tags)
 	newTagList["event"] = name

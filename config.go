@@ -36,7 +36,7 @@ func DefaultConfig(appName string) *InstrumentsConfig {
 func setupNewRelic(appName string) newrelic.Application {
 	newrelicKey := os.Getenv("NEW_RELIC_LICENSE")
 	newrelicName := os.Getenv("NEW_RELIC_NAME")
-	newrelicEnv := os.Getenv("SG_ENV")
+	shouldDisable := os.Getenv("NEW_RELIC_DISABLE")
 
 	if newrelicName == "" {
 		newrelicName = appName
@@ -44,7 +44,7 @@ func setupNewRelic(appName string) newrelic.Application {
 
 	config := newrelic.NewConfig(newrelicName, newrelicKey)
 
-	if newrelicEnv != "prod" {
+	if checkBool(shouldDisable) {
 		config.Enabled = false
 	}
 
@@ -57,4 +57,24 @@ func setupNewRelic(appName string) newrelic.Application {
 	}
 
 	return app
+}
+
+func checkBool(str string) bool {
+	if str == "" {
+		return false
+	}
+	if str == "0" {
+		return false
+	}
+	if str == "false" {
+		return false
+	}
+	if str == "1" {
+		return true
+	}
+	if str == "true" {
+		return true
+	}
+
+	return false
 }

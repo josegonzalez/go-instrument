@@ -254,7 +254,8 @@ func (i *InstrumentsConfig) ServeHTTP(rw http.ResponseWriter, r *http.Request, n
 
 	name := r.Method + " " + numberRegex.ReplaceAllString(r.URL.Path, "*")
 
-	ctx, instruemnts := i.SetInstrumentsOnContext(r.Context(), txn, name)
+	instruments := i.WithTransaction(name, txn)
+	ctx := i.SetInstrumentsOnContext(r.Context(), instruments)
 	r = r.WithContext(ctx)
 	timer := instruments.StartNoTracingTimer("requests", name)
 
@@ -264,9 +265,9 @@ func (i *InstrumentsConfig) ServeHTTP(rw http.ResponseWriter, r *http.Request, n
 	timer.EndWithFields(FieldsList{"status": res.Status()})
 }
 
-func (i *InstrumentsConfig) SetInstrumentsOnContext(ctx context.Context, txn Transaction, name string) (context.Context, Instruments) {
-	instruments := i.WithTransaction(name, txn)
-	return context.WithValue(ctx, instrumentsCtx{}, instruments), instruments
+// SetInstrumentsOnContext Set Instruments on a context value
+func (i *InstrumentsConfig) SetInstrumentsOnContext(ctx context.Context, instruments Instruments) context.Context {
+	return context.WithValue(ctx, instrumentsCtx{}, instruments)
 }
 
 // GetInstruments Returns the Instruments struct that is attached to a request

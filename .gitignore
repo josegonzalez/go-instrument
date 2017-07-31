@@ -38,8 +38,4 @@ pip-log.txt
 .env.client
 tmp
 
-# Intellij
-*.iml
-.idea
-
 request-logger

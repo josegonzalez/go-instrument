@@ -27,10 +27,10 @@
 			"revisionTime": "2017-03-08T22:38:46Z"
 		},
 		{
-			"checksumSHA1": "83fFy3fJuE8txMB0DsGcvM55mAo=",
+			"checksumSHA1": "GUy17UT17gYQH/n1/q4ttdx5qvQ=",
 			"path": "github.com/newrelic/go-agent",
-			"revision": "7c6c920d222b18632f03b12c3b594df816eab6d0",
-			"revisionTime": "2017-02-16T20:56:41Z"
+			"revision": "f5bce3387232559bcbe6a5f8227c4bf508dac1ba",
+			"revisionTime": "2017-11-28T00:03:15Z"
 		},
 		{
 			"checksumSHA1": "ayb9hq4jjgm/T+9ezjWk3WEzids=",

@@ -1,7 +1,7 @@
 package instrument
 
 import (
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	newrelic "github.com/newrelic/go-agent"
 	"github.com/newrelic/go-agent/_integrations/nrlogrus"
 	"github.com/seatgeek/telemetria"

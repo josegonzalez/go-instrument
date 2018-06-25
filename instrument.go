@@ -156,7 +156,7 @@ type NoTransaction struct{}
 // NewRelicSegment is the implementation of the Segment interface using New Relic
 // segments
 type NewRelicSegment struct {
-	Segment newrelic.Segment
+	Segment *newrelic.Segment
 }
 
 // NoSegment means that we are not actually tracking the block of code, even though

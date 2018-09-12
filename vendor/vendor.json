@@ -39,6 +39,36 @@
 			"revisionTime": "2018-08-28T16:38:49Z"
 		},
 		{
+			"checksumSHA1": "ys0np4OSuL68Ns95DYcnz1wSm80=",
+			"path": "github.com/newrelic/go-agent/_integrations/nrlogrus",
+			"revision": "46d73e6be8b4faeee70850d0df829e4fe00d6819",
+			"revisionTime": "2018-08-28T16:38:49Z"
+		},
+		{
+			"checksumSHA1": "IXrIWyJEa93VHQuZHO35Fk2CAj4=",
+			"path": "github.com/newrelic/go-agent/internal",
+			"revision": "46d73e6be8b4faeee70850d0df829e4fe00d6819",
+			"revisionTime": "2018-08-28T16:38:49Z"
+		},
+		{
+			"checksumSHA1": "vIJ3Ks0FTwtzyWrLR9hCh3eo0Mw=",
+			"path": "github.com/newrelic/go-agent/internal/cat",
+			"revision": "46d73e6be8b4faeee70850d0df829e4fe00d6819",
+			"revisionTime": "2018-08-28T16:38:49Z"
+		},
+		{
+			"checksumSHA1": "mkbupMdy+cF7xyo8xW0A6Bq15k4=",
+			"path": "github.com/newrelic/go-agent/internal/jsonx",
+			"revision": "46d73e6be8b4faeee70850d0df829e4fe00d6819",
+			"revisionTime": "2018-08-28T16:38:49Z"
+		},
+		{
+			"checksumSHA1": "ywxlVKtGArJ2vDfH1rAqEFwSGds=",
+			"path": "github.com/newrelic/go-agent/internal/logger",
+			"revision": "46d73e6be8b4faeee70850d0df829e4fe00d6819",
+			"revisionTime": "2018-08-28T16:38:49Z"
+		},
+		{
 			"checksumSHA1": "cJM8GwMbLR6/jE58CR5HDcCpJ3c=",
 			"path": "github.com/seatgeek/telemetria",
 			"revision": "99522d39fc40b9578fb96600dd5719550cd8131c",

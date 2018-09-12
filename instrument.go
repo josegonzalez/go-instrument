@@ -273,7 +273,9 @@ func (i *fullInstruments) StartNoTracingTimer(c Category, name string) *Timer {
 //
 // Its intended use is `defer instruments.StartTimer("my_action").End()`
 func (t *Timer) End() {
-	defer t.segment.End()
+	if t.segment != nil {
+		defer t.segment.End()
+	}
 	took := time.Since(t.start)
 
 	newTagList := copyTags(t.tags)

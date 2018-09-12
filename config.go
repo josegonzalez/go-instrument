@@ -28,8 +28,8 @@ func DefaultConfig(appName string) *InstrumentsConfig {
 	nr := setupNewRelic(appName)
 
 	return &InstrumentsConfig{
-		StatsRecorder: recorder,
-		Tracer:        nr,
+		statsRecorder: recorder,
+		app:           nr,
 	}
 }
 

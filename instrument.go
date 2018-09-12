@@ -44,10 +44,10 @@ type Category string
 //
 type InstrumentsConfig struct {
 	// The recorder to be used for storing influxdb metrics
-	StatsRecorder telemetria.Recorder
+	statsRecorder telemetria.Recorder
 
 	// The NewRelic implementation to use for tracking segments
-	Tracer newrelic.Application
+	app newrelic.Application
 }
 
 
@@ -131,7 +131,7 @@ type NoSegment struct{}
 // the transaction remains open
 func (i *InstrumentsConfig) WithTransaction(name string, txn newrelic.Transaction) Instruments {
 	return &fullInstruments{
-		influxdb:      i.StatsRecorder,
+		influxdb:      i.statsRecorder,
 		nrTransaction: txn,
 		txnName:       name,
 		config:        i,
@@ -147,7 +147,7 @@ func (i *fullInstruments) ServeHTTP(rw http.ResponseWriter, r *http.Request, nex
 // into the request context so that they can be used directly in each of the handlers
 // in the middleware stack
 func (i *InstrumentsConfig) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
-	txn := i.Tracer.StartTransaction(r.URL.Path, rw, r)
+	txn := i.app.StartTransaction(r.URL.Path, rw, r)
 	defer txn.End()
 
 	txn.AddAttribute("query", r.URL.RawQuery)
@@ -193,7 +193,7 @@ func (i *fullInstruments) NoticeError(e error) {
 // in goroutines other than the one that spun the first transaction.
 func (i *fullInstruments) WithOfflineTransaction(f func(Instruments)) {
 	name := "(offline)" + i.txnName
-	txn := i.config.Tracer.StartTransaction(name, nil, nil)
+	txn := i.config.app.StartTransaction(name, nil, nil)
 	defer txn.End()
 
 	instruments := i.config.WithTransaction(name, txn)
@@ -396,8 +396,8 @@ func NewMockedInstruments() Instruments {
 		nrTransaction: nil,
 		txnName:       "test_txn",
 		config: &InstrumentsConfig{
-			StatsRecorder: recorder,
-			Tracer:       nil,
+			statsRecorder: recorder,
+			app:           nil,
 		},
 	}
 }

@@ -44,47 +44,17 @@ type Category string
 //
 type InstrumentsConfig struct {
 	// The recorder to be used for storing influxdb metrics
-	StatsRecorder telemetria.Recorder
+	statsRecorder telemetria.Recorder
 
 	// The NewRelic implementation to use for tracking segments
-	Tracer NewRelic
+	app newrelic.Application
 }
 
-// NewRelic encapsulates the single responsibility of creating a tracing transaction
-// out of a server request.
-type NewRelic interface {
-	//Creates a new transaction out of a custom name and the arguments of a server request
-	NewTransaction(string, http.ResponseWriter, *http.Request) Transaction
-}
-
-// Transaction encapsulates most of the idea of tracking information about a request.
-// a Transaction is started at the beginning of each request and closed immediately after.
-type Transaction interface {
-	// Store additional information for this request as a key-value pair
-	AddAttribute(string, string)
-
-	// Starts a sort of sub-stransaction attached to this one. Segments are used
-	// for timing blocks of code
-	StartSegment(name string) Segment
-
-	// Records that an error happened during this transaction
-	NoticeError(e error)
-
-	// Finishes the transaction and stores all the gathered data
-	End()
-}
 
 // Segment is a sort of sub-transaction that is used to time blocks of code
 type Segment interface {
 	// Stops the timer and records the results
 	End()
-}
-
-// NewRelicTransaction ins the implementation of Transaction using the NewRelic
-// library.
-type NewRelicTransaction struct {
-	// The New Relic Transaction
-	Txn newrelic.Transaction
 }
 
 // Instruments contains all the external facing methods that are relevant to
@@ -129,21 +99,19 @@ type Instruments interface {
 	// Proper implementations of this method will automatically end the transaction
 	// and the end of the method
 	WithOfflineTransaction(func(Instruments))
+
+	// GetTransaction Get a current NewRelic transaction
+	GetTransaction() newrelic.Transaction
 }
 
 type fullInstruments struct {
 	influxdb telemetria.Recorder
 
-	nrTransaction Transaction
+	nrTransaction newrelic.Transaction
 
 	txnName string
 
 	config *InstrumentsConfig
-}
-
-// HasNewRelic contains the newrelicApp and indicates it should be used for instrumentation
-type HasNewRelic struct {
-	Application *newrelic.Application
 }
 
 // WithoutNewRelic indicates that no new relic middleware instrumentation
@@ -153,85 +121,32 @@ type WithoutNewRelic struct{}
 // or during testing
 type NoTransaction struct{}
 
+// NoSegment means that we are not actually tracking the block of code, even though
+// it was requested. This is useful for testing and for custom implementations
+// of Instruments
+type NoSegment struct{}
+
+// End does nothing
+func (n NoSegment) End() {}
+
 // NewRelicSegment is the implementation of the Segment interface using New Relic
 // segments
 type NewRelicSegment struct {
 	Segment *newrelic.Segment
 }
 
-// NoSegment means that we are not actually tracking the block of code, even though
-// it was requested. This is useful for testing and for custom implementations
-// of Instruments
-type NoSegment struct{}
-
-// NewTransaction starts tracking the request from the client by giving it a custom
-// name and both the response and request structs.
-func (n HasNewRelic) NewTransaction(name string, rw http.ResponseWriter, r *http.Request) Transaction {
-	app := *n.Application
-	txn := app.StartTransaction(name, rw, r)
-
-	if r != nil && r.URL.Path == "/_status" {
-		txn.Ignore()
-	}
-
-	return NewRelicTransaction{Txn: txn}
-}
-
-// AddAttribute stores the key-value attribute for the transaction directly with
-// NewRelic without altering it.
-func (t NewRelicTransaction) AddAttribute(name string, value string) {
-	t.Txn.AddAttribute(name, value)
-}
-
-// End terminates the New Relic transaction
-func (t NewRelicTransaction) End() {
-	t.Txn.End()
-}
-
-// NoticeError uses the New Relic's underlying API to store the error associated
-// with the current transaction
-func (t NewRelicTransaction) NoticeError(e error) {
-	t.Txn.NoticeError(e)
-}
-
 // StartSegment starts a New Relic plain Segment
-func (t NewRelicTransaction) StartSegment(name string) Segment {
-	return NewRelicSegment{Segment: newrelic.StartSegment(t.Txn, name)}
-}
-
 // End terminates the New Relic segment
 func (s NewRelicSegment) End() {
 	s.Segment.End()
 }
 
-// NewTransaction returns a mocked Transaction
-func (n WithoutNewRelic) NewTransaction(name string, rw http.ResponseWriter, r *http.Request) Transaction {
-	return NoTransaction{}
-}
-
-// End does nothing
-func (n NoSegment) End() {}
-
-// AddAttribute does nothing
-func (t NoTransaction) AddAttribute(name string, value string) {}
-
-// End does nothing
-func (t NoTransaction) End() {}
-
-// NoticeError does nothing
-func (t NoTransaction) NoticeError(e error) {}
-
-// StartSegment returns a mocked Segment
-func (t NoTransaction) StartSegment(name string) Segment {
-	return NoSegment{}
-}
-
 // WithTransaction creates new Instruments associated with the passed transaction
 // that can be used from tracking various aspects of the application as long as
 // the transaction remains open
-func (i *InstrumentsConfig) WithTransaction(name string, txn Transaction) Instruments {
+func (i *InstrumentsConfig) WithTransaction(name string, txn newrelic.Transaction) Instruments {
 	return &fullInstruments{
-		influxdb:      i.StatsRecorder,
+		influxdb:      i.statsRecorder,
 		nrTransaction: txn,
 		txnName:       name,
 		config:        i,
@@ -247,7 +162,7 @@ func (i *fullInstruments) ServeHTTP(rw http.ResponseWriter, r *http.Request, nex
 // into the request context so that they can be used directly in each of the handlers
 // in the middleware stack
 func (i *InstrumentsConfig) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
-	txn := i.Tracer.NewTransaction(r.URL.Path, rw, r)
+	txn := i.StartTransaction(r.URL.Path, rw, r)
 	defer txn.End()
 
 	txn.AddAttribute("query", r.URL.RawQuery)
@@ -257,6 +172,7 @@ func (i *InstrumentsConfig) ServeHTTP(rw http.ResponseWriter, r *http.Request, n
 	instruments := i.WithTransaction(name, txn)
 	ctx := i.SetInstrumentsOnContext(r.Context(), instruments)
 	r = r.WithContext(ctx)
+
 	timer := instruments.StartNoTracingTimer("requests", name)
 
 	res := negroni.NewResponseWriter(rw)
@@ -268,6 +184,10 @@ func (i *InstrumentsConfig) ServeHTTP(rw http.ResponseWriter, r *http.Request, n
 // SetInstrumentsOnContext Set Instruments on a context value
 func (i *InstrumentsConfig) SetInstrumentsOnContext(ctx context.Context, instruments Instruments) context.Context {
 	return context.WithValue(ctx, instrumentsCtx{}, instruments)
+}
+
+func (i *InstrumentsConfig) StartTransaction(name string, w http.ResponseWriter, r *http.Request) newrelic.Transaction {
+	return i.app.StartTransaction(name, w, r)
 }
 
 // GetInstruments Returns the Instruments struct that is attached to a request
@@ -288,11 +208,11 @@ func (i *fullInstruments) NoticeError(e error) {
 }
 
 // WithOfflineTransaction Will start a new transaction with a similar name to the
-// parent transaction. This method is mainly used to track code that is runinng
+// parent transaction. This method is mainly used to track code that is running
 // in goroutines other than the one that spun the first transaction.
 func (i *fullInstruments) WithOfflineTransaction(f func(Instruments)) {
 	name := "(offline)" + i.txnName
-	txn := i.config.Tracer.NewTransaction(name, nil, nil)
+	txn := i.config.StartTransaction(name, nil, nil)
 	defer txn.End()
 
 	instruments := i.config.WithTransaction(name, txn)
@@ -330,7 +250,7 @@ func (i *fullInstruments) StartTimer(c Category, name string) *Timer {
 		instruments: i,
 		tags:        TagsList{},
 		fields:      FieldsList{},
-		segment:     i.nrTransaction.StartSegment(string(c) + "::" + name),
+		segment:     NewRelicSegment{Segment: newrelic.StartSegment(i.nrTransaction, name)},
 	}
 }
 
@@ -349,7 +269,7 @@ func (i *fullInstruments) StartTimerWithTags(c Category, name string, tags TagsL
 		start:       time.Now(),
 		instruments: i,
 		tags:        tags,
-		segment:     i.nrTransaction.StartSegment(segmentName),
+		segment:     NewRelicSegment{Segment: newrelic.StartSegment(i.nrTransaction, name)},
 	}
 }
 
@@ -457,6 +377,10 @@ func (i *fullInstruments) RecordEvent(c Category, name string, fields FieldsList
 	})
 }
 
+func (i *fullInstruments) GetTransaction() newrelic.Transaction {
+	return i.nrTransaction
+}
+
 func copyFields(fields FieldsList) FieldsList {
 	newList := FieldsList{}
 	for k, v := range fields {
@@ -486,11 +410,11 @@ func NewMockedInstruments() Instruments {
 
 	return &fullInstruments{
 		influxdb:      recorder,
-		nrTransaction: NoTransaction{},
+		nrTransaction: nil,
 		txnName:       "test_txn",
 		config: &InstrumentsConfig{
-			StatsRecorder: recorder,
-			Tracer:        WithoutNewRelic{},
+			statsRecorder: recorder,
+			app:           nil,
 		},
 	}
 }
@@ -531,7 +455,7 @@ func (n NoInstruments) StartTimerWithTags(c Category, name string, tags TagsList
 		instruments: n,
 		tags:        tags,
 		fields:      FieldsList{},
-		segment:     NoSegment{},
+		segment:     nil,
 	}
 }
 
@@ -543,4 +467,8 @@ func (n NoInstruments) WithResultTiming(c Category, name string, t TagsList, f f
 // WithOfflineTransaction will call the passed function with NoInstruments
 func (n NoInstruments) WithOfflineTransaction(f func(Instruments)) {
 	f(n)
+}
+
+func (n NoInstruments) GetTransaction() newrelic.Transaction {
+	return nil
 }

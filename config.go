@@ -2,7 +2,7 @@ package instrument
 
 import (
 	log "github.com/sirupsen/logrus"
-	newrelic "github.com/newrelic/go-agent"
+	"github.com/newrelic/go-agent"
 	"github.com/newrelic/go-agent/_integrations/nrlogrus"
 	"github.com/seatgeek/telemetria"
 	"os"
@@ -28,8 +28,8 @@ func DefaultConfig(appName string) *InstrumentsConfig {
 	nr := setupNewRelic(appName)
 
 	return &InstrumentsConfig{
-		StatsRecorder: recorder,
-		Tracer:        HasNewRelic{Application: &nr},
+		statsRecorder: recorder,
+		app:           nr,
 	}
 }
 
@@ -43,6 +43,8 @@ func setupNewRelic(appName string) newrelic.Application {
 	}
 
 	config := newrelic.NewConfig(newrelicName, newrelicKey)
+	config.CrossApplicationTracer.Enabled = false
+	config.DistributedTracer.Enabled = true
 
 	if checkBool(shouldDisable) {
 		config.Enabled = false

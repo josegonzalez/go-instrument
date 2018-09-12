@@ -100,7 +100,7 @@ type Instruments interface {
 	// and the end of the method
 	WithOfflineTransaction(func(Instruments))
 
-	// GetTransaction
+	// GetTransaction Get a current NewRelic transaction
 	GetTransaction() newrelic.Transaction
 }
 
@@ -126,6 +126,21 @@ type NoTransaction struct{}
 // of Instruments
 type NoSegment struct{}
 
+// End does nothing
+func (n NoSegment) End() {}
+
+// NewRelicSegment is the implementation of the Segment interface using New Relic
+// segments
+type NewRelicSegment struct {
+	Segment *newrelic.Segment
+}
+
+// StartSegment starts a New Relic plain Segment
+// End terminates the New Relic segment
+func (s NewRelicSegment) End() {
+	s.Segment.End()
+}
+
 // WithTransaction creates new Instruments associated with the passed transaction
 // that can be used from tracking various aspects of the application as long as
 // the transaction remains open
@@ -147,7 +162,7 @@ func (i *fullInstruments) ServeHTTP(rw http.ResponseWriter, r *http.Request, nex
 // into the request context so that they can be used directly in each of the handlers
 // in the middleware stack
 func (i *InstrumentsConfig) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
-	txn := i.app.StartTransaction(r.URL.Path, rw, r)
+	txn := i.StartTransaction(r.URL.Path, rw, r)
 	defer txn.End()
 
 	txn.AddAttribute("query", r.URL.RawQuery)
@@ -169,6 +184,10 @@ func (i *InstrumentsConfig) ServeHTTP(rw http.ResponseWriter, r *http.Request, n
 // SetInstrumentsOnContext Set Instruments on a context value
 func (i *InstrumentsConfig) SetInstrumentsOnContext(ctx context.Context, instruments Instruments) context.Context {
 	return context.WithValue(ctx, instrumentsCtx{}, instruments)
+}
+
+func (i *InstrumentsConfig) StartTransaction(name string, w http.ResponseWriter, r *http.Request) newrelic.Transaction {
+	return i.app.StartTransaction(name, w, r)
 }
 
 // GetInstruments Returns the Instruments struct that is attached to a request
@@ -193,7 +212,7 @@ func (i *fullInstruments) NoticeError(e error) {
 // in goroutines other than the one that spun the first transaction.
 func (i *fullInstruments) WithOfflineTransaction(f func(Instruments)) {
 	name := "(offline)" + i.txnName
-	txn := i.config.app.StartTransaction(name, nil, nil)
+	txn := i.config.StartTransaction(name, nil, nil)
 	defer txn.End()
 
 	instruments := i.config.WithTransaction(name, txn)
@@ -213,7 +232,7 @@ type Timer struct {
 	fields      FieldsList
 	tags        TagsList
 	instruments Instruments
-	segment     *newrelic.Segment
+	segment     Segment
 }
 
 // StartTimer returns a Timer that can be stoped at the end of an operation
@@ -231,7 +250,7 @@ func (i *fullInstruments) StartTimer(c Category, name string) *Timer {
 		instruments: i,
 		tags:        TagsList{},
 		fields:      FieldsList{},
-		segment:     newrelic.StartSegment(i.nrTransaction, name),
+		segment:     NewRelicSegment{Segment: newrelic.StartSegment(i.nrTransaction, name)},
 	}
 }
 
@@ -250,7 +269,7 @@ func (i *fullInstruments) StartTimerWithTags(c Category, name string, tags TagsL
 		start:       time.Now(),
 		instruments: i,
 		tags:        tags,
-		segment:     newrelic.StartSegment(i.nrTransaction, segmentName),
+		segment:     NewRelicSegment{Segment: newrelic.StartSegment(i.nrTransaction, name)},
 	}
 }
 
@@ -264,7 +283,7 @@ func (i *fullInstruments) StartNoTracingTimer(c Category, name string) *Timer {
 		instruments: i,
 		tags:        TagsList{},
 		fields:      FieldsList{},
-		segment:     nil,
+		segment:     NoSegment{},
 	}
 }
 

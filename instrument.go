@@ -455,7 +455,7 @@ func (n NoInstruments) StartTimerWithTags(c Category, name string, tags TagsList
 		instruments: n,
 		tags:        tags,
 		fields:      FieldsList{},
-		segment:     nil,
+		segment:     NoSegment{},
 	}
 }
 

@@ -38,9 +38,6 @@ func setupNewRelic(appName string) newrelic.Application {
 	newrelicName := os.Getenv("NEW_RELIC_NAME")
 	shouldDisable := os.Getenv("NEW_RELIC_DISABLE")
 
-	log.Info("license - name", newrelicKey, newrelicName)
-
-
 	if newrelicName == "" {
 		newrelicName = appName
 	}

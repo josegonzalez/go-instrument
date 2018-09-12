@@ -2,7 +2,7 @@ package instrument
 
 import (
 	log "github.com/sirupsen/logrus"
-	newrelic "github.com/newrelic/go-agent"
+	"github.com/newrelic/go-agent"
 	"github.com/newrelic/go-agent/_integrations/nrlogrus"
 	"github.com/seatgeek/telemetria"
 	"os"
@@ -37,6 +37,9 @@ func setupNewRelic(appName string) newrelic.Application {
 	newrelicKey := os.Getenv("NEW_RELIC_LICENSE")
 	newrelicName := os.Getenv("NEW_RELIC_NAME")
 	shouldDisable := os.Getenv("NEW_RELIC_DISABLE")
+
+	log.Info("license - name", newrelicKey, newrelicName)
+
 
 	if newrelicName == "" {
 		newrelicName = appName

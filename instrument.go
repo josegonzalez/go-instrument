@@ -150,9 +150,6 @@ func (i *InstrumentsConfig) ServeHTTP(rw http.ResponseWriter, r *http.Request, n
 	txn := i.Tracer.StartTransaction(r.URL.Path, rw, r)
 	defer txn.End()
 
-	newrelic.WrapHandle()
-
-
 	txn.AddAttribute("query", r.URL.RawQuery)
 
 	name := r.Method + " " + numberRegex.ReplaceAllString(r.URL.Path, "*")

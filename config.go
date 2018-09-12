@@ -29,7 +29,7 @@ func DefaultConfig(appName string) *InstrumentsConfig {
 
 	return &InstrumentsConfig{
 		StatsRecorder: recorder,
-		Tracer:        HasNewRelic{Application: &nr},
+		Tracer:        nr,
 	}
 }
 
@@ -43,6 +43,8 @@ func setupNewRelic(appName string) newrelic.Application {
 	}
 
 	config := newrelic.NewConfig(newrelicName, newrelicKey)
+	config.CrossApplicationTracer.Enabled = false
+	config.DistributedTracer.Enabled = true
 
 	if checkBool(shouldDisable) {
 		config.Enabled = false

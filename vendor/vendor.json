@@ -27,52 +27,16 @@
 			"revisionTime": "2017-03-08T22:38:46Z"
 		},
 		{
-			"checksumSHA1": "7WUVWIJoEjmz3eygTF+qHwG53z0=",
+			"checksumSHA1": "wUH5SD5GD4zv2Q2e+9RJkJC8qxg=",
 			"path": "github.com/newrelic/go-agent",
-			"revision": "a5d75f2b4787aa1bbc76688187b2353f8ff581a6",
-			"revisionTime": "2018-05-03T18:42:24Z"
+			"revision": "46d73e6be8b4faeee70850d0df829e4fe00d6819",
+			"revisionTime": "2018-08-28T16:38:49Z"
 		},
 		{
 			"checksumSHA1": "ys0np4OSuL68Ns95DYcnz1wSm80=",
 			"path": "github.com/newrelic/go-agent/_integrations/nrlogrus",
-			"revision": "a5d75f2b4787aa1bbc76688187b2353f8ff581a6",
-			"revisionTime": "2018-05-03T18:42:24Z"
-		},
-		{
-			"checksumSHA1": "EyMtsoF9d/C+Lh3udFlw0fzcsbA=",
-			"path": "github.com/newrelic/go-agent/internal",
-			"revision": "a5d75f2b4787aa1bbc76688187b2353f8ff581a6",
-			"revisionTime": "2018-05-03T18:42:24Z"
-		},
-		{
-			"checksumSHA1": "vIJ3Ks0FTwtzyWrLR9hCh3eo0Mw=",
-			"path": "github.com/newrelic/go-agent/internal/cat",
-			"revision": "a5d75f2b4787aa1bbc76688187b2353f8ff581a6",
-			"revisionTime": "2018-05-03T18:42:24Z"
-		},
-		{
-			"checksumSHA1": "mkbupMdy+cF7xyo8xW0A6Bq15k4=",
-			"path": "github.com/newrelic/go-agent/internal/jsonx",
-			"revision": "a5d75f2b4787aa1bbc76688187b2353f8ff581a6",
-			"revisionTime": "2018-05-03T18:42:24Z"
-		},
-		{
-			"checksumSHA1": "ywxlVKtGArJ2vDfH1rAqEFwSGds=",
-			"path": "github.com/newrelic/go-agent/internal/logger",
-			"revision": "a5d75f2b4787aa1bbc76688187b2353f8ff581a6",
-			"revisionTime": "2018-05-03T18:42:24Z"
-		},
-		{
-			"checksumSHA1": "UrKUDjmw5vdff+izBrdZRiChPSI=",
-			"path": "github.com/newrelic/go-agent/internal/sysinfo",
-			"revision": "a5d75f2b4787aa1bbc76688187b2353f8ff581a6",
-			"revisionTime": "2018-05-03T18:42:24Z"
-		},
-		{
-			"checksumSHA1": "aG3o84sokPnpJn0hOoiPbiPvOkA=",
-			"path": "github.com/newrelic/go-agent/internal/utilization",
-			"revision": "a5d75f2b4787aa1bbc76688187b2353f8ff581a6",
-			"revisionTime": "2018-05-03T18:42:24Z"
+			"revision": "46d73e6be8b4faeee70850d0df829e4fe00d6819",
+			"revisionTime": "2018-08-28T16:38:49Z"
 		},
 		{
 			"checksumSHA1": "cJM8GwMbLR6/jE58CR5HDcCpJ3c=",

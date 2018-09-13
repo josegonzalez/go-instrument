@@ -410,7 +410,7 @@ func NewMockedInstruments() Instruments {
 
 	return &fullInstruments{
 		influxdb:      recorder,
-		nrTransaction: nil,
+		nrTransaction: &EmptyTransaction{},
 		txnName:       "test_txn",
 		config: &InstrumentsConfig{
 			statsRecorder: recorder,
@@ -470,5 +470,51 @@ func (n NoInstruments) WithOfflineTransaction(f func(Instruments)) {
 }
 
 func (n NoInstruments) GetTransaction() newrelic.Transaction {
+	return &EmptyTransaction{}
+}
+
+
+type EmptyTransaction struct {
+	http.ResponseWriter
+}
+
+func (e *EmptyTransaction) End() error {
+	return nil
+}
+
+func (e *EmptyTransaction) Ignore() error {
+	return nil
+}
+
+func (e *EmptyTransaction) SetName(name string) error {
+	return nil
+}
+
+func (e *EmptyTransaction) NoticeError(err error) error {
+	return nil
+}
+
+func (e *EmptyTransaction) AddAttribute(key string, value interface{}) error {
+	return nil
+}
+
+func (e *EmptyTransaction) StartSegmentNow() newrelic.SegmentStartTime {
+	return newrelic.SegmentStartTime{}
+}
+
+type EmptyDistributedTracePayload struct{}
+
+func (e *EmptyDistributedTracePayload) HTTPSafe() string {
+	return ""
+}
+func (e *EmptyDistributedTracePayload) Text() string {
+	return ""
+}
+
+func (e *EmptyTransaction) CreateDistributedTracePayload() newrelic.DistributedTracePayload {
+	return &EmptyDistributedTracePayload{}
+}
+
+func (e *EmptyTransaction) AcceptDistributedTracePayload(t newrelic.TransportType, payload interface{}) error {
 	return nil
 }

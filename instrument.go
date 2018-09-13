@@ -401,7 +401,7 @@ func copyTags(tags TagsList) TagsList {
 
 //
 // Mocked instruments
-//
+/db_test/
 
 // NewMockedInstruments  will return Instruments that can be safely used during
 // testing

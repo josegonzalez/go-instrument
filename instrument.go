@@ -3,12 +3,12 @@ package instrument
 import (
 	"context"
 	"fmt"
+	"github.com/codegangsta/negroni"
+	newrelic "github.com/newrelic/go-agent"
+	"github.com/seatgeek/telemetria"
 	"net/http"
 	"regexp"
 	"time"
-
-	"github.com/codegangsta/negroni"
-	"github.com/seatgeek/telemetria"
 )
 
 var numberRegex = regexp.MustCompile(`[\d]+`)
@@ -36,7 +36,7 @@ type FieldsList map[string]interface{}
 type Category string
 
 // InstrumentsConfig contains the configuration that will be used for creating the
-// Instruments. That is, the instance of the telemetria.Recorder
+// Instruments. That is, the instance of the telemetria.Recorder and the NewRelic
 // configuration that will be used for tracking requests and custom segments.
 //
 // In general it is not a good idea to instantiate this yourself, you can use
@@ -45,7 +45,11 @@ type Category string
 type InstrumentsConfig struct {
 	// The recorder to be used for storing influxdb metrics
 	statsRecorder telemetria.Recorder
+
+	// The NewRelic implementation to use for tracking segments
+	app newrelic.Application
 }
+
 
 // Segment is a sort of sub-transaction that is used to time blocks of code
 type Segment interface {
@@ -95,14 +99,58 @@ type Instruments interface {
 	// Proper implementations of this method will automatically end the transaction
 	// and the end of the method
 	WithOfflineTransaction(func(Instruments))
+
+	// GetTransaction Get a current NewRelic transaction
+	GetTransaction() newrelic.Transaction
 }
 
 type fullInstruments struct {
 	influxdb telemetria.Recorder
 
+	nrTransaction newrelic.Transaction
+
 	txnName string
 
 	config *InstrumentsConfig
+}
+
+// WithoutNewRelic indicates that no new relic middleware instrumentation
+type WithoutNewRelic struct{}
+
+// NoTransaction represents a mocked tracing transaction. Useful for development
+// or during testing
+type NoTransaction struct{}
+
+// NoSegment means that we are not actually tracking the block of code, even though
+// it was requested. This is useful for testing and for custom implementations
+// of Instruments
+type NoSegment struct{}
+
+// End does nothing
+func (n NoSegment) End() {}
+
+// NewRelicSegment is the implementation of the Segment interface using New Relic
+// segments
+type NewRelicSegment struct {
+	Segment *newrelic.Segment
+}
+
+// StartSegment starts a New Relic plain Segment
+// End terminates the New Relic segment
+func (s NewRelicSegment) End() {
+	s.Segment.End()
+}
+
+// WithTransaction creates new Instruments associated with the passed transaction
+// that can be used from tracking various aspects of the application as long as
+// the transaction remains open
+func (i *InstrumentsConfig) WithTransaction(name string, txn newrelic.Transaction) Instruments {
+	return &fullInstruments{
+		influxdb:      i.statsRecorder,
+		nrTransaction: txn,
+		txnName:       name,
+		config:        i,
+	}
 }
 
 // ServeHTTP delegates the tracking of the request to the stored InstrumentsConfig
@@ -115,6 +163,7 @@ func (i *fullInstruments) ServeHTTP(rw http.ResponseWriter, r *http.Request, nex
 // in the middleware stack
 func (i *InstrumentsConfig) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	txn := i.StartTransaction(r.URL.Path, rw, r)
+	defer txn.End()
 
 	txn.AddAttribute("query", r.URL.RawQuery)
 
@@ -137,6 +186,10 @@ func (i *InstrumentsConfig) SetInstrumentsOnContext(ctx context.Context, instrum
 	return context.WithValue(ctx, instrumentsCtx{}, instruments)
 }
 
+func (i *InstrumentsConfig) StartTransaction(name string, w http.ResponseWriter, r *http.Request) newrelic.Transaction {
+	return i.app.StartTransaction(name, w, r)
+}
+
 // GetInstruments Returns the Instruments struct that is attached to a request
 // This struct can be used to time or trace segments of the request
 func GetInstruments(r *http.Request) Instruments {
@@ -147,6 +200,11 @@ func GetInstruments(r *http.Request) Instruments {
 // This struct can be used to time or trace segments of the request
 func GetInstrumentsFromContext(ctx context.Context) Instruments {
 	return ctx.Value(instrumentsCtx{}).(Instruments)
+}
+
+// NoticeError just delegates the error tracking to the New Relic instance
+func (i *fullInstruments) NoticeError(e error) {
+	i.nrTransaction.NoticeError(e)
 }
 
 // WithOfflineTransaction Will start a new transaction with a similar name to the
@@ -174,6 +232,7 @@ type Timer struct {
 	fields      FieldsList
 	tags        TagsList
 	instruments Instruments
+	segment     Segment
 }
 
 // StartTimer returns a Timer that can be stoped at the end of an operation
@@ -191,6 +250,7 @@ func (i *fullInstruments) StartTimer(c Category, name string) *Timer {
 		instruments: i,
 		tags:        TagsList{},
 		fields:      FieldsList{},
+		segment:     NewRelicSegment{Segment: newrelic.StartSegment(i.nrTransaction, name)},
 	}
 }
 
@@ -208,7 +268,8 @@ func (i *fullInstruments) StartTimerWithTags(c Category, name string, tags TagsL
 		name:        name,
 		start:       time.Now(),
 		instruments: i,
-		tags:        tags
+		tags:        tags,
+		segment:     NewRelicSegment{Segment: newrelic.StartSegment(i.nrTransaction, name)},
 	}
 }
 
@@ -316,6 +377,10 @@ func (i *fullInstruments) RecordEvent(c Category, name string, fields FieldsList
 	})
 }
 
+func (i *fullInstruments) GetTransaction() newrelic.Transaction {
+	return i.nrTransaction
+}
+
 func copyFields(fields FieldsList) FieldsList {
 	newList := FieldsList{}
 	for k, v := range fields {
@@ -344,10 +409,12 @@ func NewMockedInstruments() Instruments {
 	recorder, _ := telemetria.NewRecorder("udp://localhost:13378")
 
 	return &fullInstruments{
-		influxdb: recorder,
-		txnName:  "test_txn",
+		influxdb:      recorder,
+		nrTransaction: &EmptyTransaction{},
+		txnName:       "test_txn",
 		config: &InstrumentsConfig{
 			statsRecorder: recorder,
+			app:           nil,
 		},
 	}
 }
@@ -387,7 +454,8 @@ func (n NoInstruments) StartTimerWithTags(c Category, name string, tags TagsList
 		start:       time.Now(),
 		instruments: n,
 		tags:        tags,
-		fields:      FieldsList{}
+		fields:      FieldsList{},
+		segment:     NoSegment{},
 	}
 }
 
@@ -400,6 +468,11 @@ func (n NoInstruments) WithResultTiming(c Category, name string, t TagsList, f f
 func (n NoInstruments) WithOfflineTransaction(f func(Instruments)) {
 	f(n)
 }
+
+func (n NoInstruments) GetTransaction() newrelic.Transaction {
+	return &EmptyTransaction{}
+}
+
 
 type EmptyTransaction struct {
 	http.ResponseWriter
@@ -425,6 +498,10 @@ func (e *EmptyTransaction) AddAttribute(key string, value interface{}) error {
 	return nil
 }
 
+func (e *EmptyTransaction) StartSegmentNow() newrelic.SegmentStartTime {
+	return newrelic.SegmentStartTime{}
+}
+
 type EmptyDistributedTracePayload struct{}
 
 func (e *EmptyDistributedTracePayload) HTTPSafe() string {
@@ -432,4 +509,12 @@ func (e *EmptyDistributedTracePayload) HTTPSafe() string {
 }
 func (e *EmptyDistributedTracePayload) Text() string {
 	return ""
+}
+
+func (e *EmptyTransaction) CreateDistributedTracePayload() newrelic.DistributedTracePayload {
+	return &EmptyDistributedTracePayload{}
+}
+
+func (e *EmptyTransaction) AcceptDistributedTracePayload(t newrelic.TransportType, payload interface{}) error {
+	return nil
 }

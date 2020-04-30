@@ -1,10 +1,11 @@
 package instrument
 
 import (
-	"os"
-
-	"github.com/seatgeek/telemetria"
 	log "github.com/sirupsen/logrus"
+	"github.com/newrelic/go-agent"
+	"github.com/newrelic/go-agent/_integrations/nrlogrus"
+	"github.com/seatgeek/telemetria"
+	"os"
 )
 
 // DefaultConfig Returns the InstrumentsCofig that is most suitable
@@ -24,9 +25,40 @@ func DefaultConfig(appName string) *InstrumentsConfig {
 		panic(err)
 	}
 
+	nr := setupNewRelic(appName)
+
 	return &InstrumentsConfig{
 		statsRecorder: recorder,
+		app:           nr,
 	}
+}
+
+func setupNewRelic(appName string) newrelic.Application {
+	newrelicKey := os.Getenv("NEW_RELIC_LICENSE")
+	newrelicName := os.Getenv("NEW_RELIC_NAME")
+	shouldDisable := os.Getenv("NEW_RELIC_DISABLE")
+
+	if newrelicName == "" {
+		newrelicName = appName
+	}
+
+	config := newrelic.NewConfig(newrelicName, newrelicKey)
+	config.CrossApplicationTracer.Enabled = false
+	config.DistributedTracer.Enabled = true
+
+	if checkBool(shouldDisable) {
+		config.Enabled = false
+	}
+
+	config.Logger = nrlogrus.StandardLogger()
+	app, err := newrelic.NewApplication(config)
+
+	if err != nil {
+		log.Fatalf("Invalid New Relic app name or license key: %s", err)
+		panic(err)
+	}
+
+	return app
 }
 
 func checkBool(str string) bool {
